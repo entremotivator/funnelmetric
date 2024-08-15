@@ -18,14 +18,20 @@ def generate_demo_data():
     for platform in platforms:
         platform_data = {}
         for metric in metrics:
-            platform_data[metric] = [(start_date + timedelta(days=i)).strftime('%Y-%m-%d'), random.randint(0, 100)] for i in range(31)
+            platform_data[metric] = [
+                {
+                    "Date": (start_date + timedelta(days=i)).strftime('%Y-%m-%d'),
+                    "Value": random.randint(0, 100)
+                }
+                for i in range(31)
+            ]
         data[platform] = platform_data
     return data
 
 # Data to DataFrame
 def generate_platform_df(platform_data):
-    df = pd.DataFrame(platform_data)
-    df['Date'] = pd.to_datetime(df['Date'])
+    df = pd.DataFrame({metric: [entry["Value"] for entry in platform_data[metric]] for metric in platform_data})
+    df['Date'] = pd.to_datetime([entry["Date"] for entry in platform_data[metrics[0]]])
     df.index = df['Date']
     df['Total'] = df.sum(axis=1)
     df['Average'] = df.mean(axis=1)
@@ -82,8 +88,7 @@ def main():
 
     # Heatmap for Engagement
     st.subheader("Engagement Heatmap")
-    engagement_heatmap_data = platform_df.pivot_table(values='Engagement', index=platform_df.index, columns=platform_df.columns, fill_value=0)
-    st.heatmap(engagement_heatmap_data)
+    st.write("Heatmap visualization is not fully implemented in Streamlit without additional libraries or custom solutions.")
 
     # Provide option to enter or update data for each day and metric
     st.sidebar.header("Update Data")
