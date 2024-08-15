@@ -33,8 +33,10 @@ def generate_platform_df(platform_data):
     df = pd.DataFrame({metric: [entry["Value"] for entry in platform_data[metric]] for metric in platform_data})
     df['Date'] = pd.to_datetime([entry["Date"] for entry in platform_data[metrics[0]]])
     df.index = df['Date']
-    df['Total'] = df.sum(axis=1)
-    df['Average'] = df.mean(axis=1)
+    # Ensure only numeric data is summed
+    numeric_df = df.select_dtypes(include=[np.number])
+    df['Total'] = numeric_df.sum(axis=1)
+    df['Average'] = numeric_df.mean(axis=1)
     return df
 
 # Load Data (Simulated Persistence)
@@ -56,24 +58,18 @@ def main():
     # Dashboard Overview
     st.header("Dashboard Overview")
 
-    # Summary statistics with date range filtering
-    st.subheader("Summary Statistics")
-    start_date = st.date_input("Start Date", datetime.today() - timedelta(days=30))
-    end_date = st.date_input("End Date", datetime.today())
+    # Display all metrics without date filtering
+    st.subheader("All Metrics Overview")
+    
+    # Sum up metrics across all platforms for the entire period
+    summary = pd.DataFrame(columns=metrics)
+    for platform in platforms:
+        platform_df = generate_platform_df(data[platform])
+        summary.loc[platform] = platform_df[metrics].sum()
 
-    filtered_data = {platform: generate_platform_df(data[platform]).loc[start_date:end_date] for platform in platforms}
+    st.dataframe(summary)
 
-    total_posts = sum(filtered_data[platform]['Posts'].sum() for platform in platforms)
-    total_engagement = sum(filtered_data[platform]['Engagement'].sum() for platform in platforms)
-    total_clicks = sum(filtered_data[platform]['Clicks'].sum() for platform in platforms)
-    total_views = sum(filtered_data[platform]['Views'].sum() for platform in platforms)
-
-    st.write(f"**Total Posts**: {total_posts}")
-    st.write(f"**Total Engagement**: {total_engagement}")
-    st.write(f"**Total Clicks**: {total_clicks}")
-    st.write(f"**Total Views**: {total_views}")
-
-    # Platform Data
+    # Detailed Platform Data
     st.sidebar.header("Platform Data")
     selected_platform = st.sidebar.selectbox("Select a Platform", platforms)
 
@@ -86,17 +82,13 @@ def main():
     metrics_to_plot = st.multiselect("Select Metrics to Plot", metrics, default=metrics[:3])
     st.line_chart(platform_df[metrics_to_plot])
 
-    # Heatmap for Engagement
-    st.subheader("Engagement Heatmap")
-    st.write("Heatmap visualization is not fully implemented in Streamlit without additional libraries or custom solutions.")
-
     # Provide option to enter or update data for each day and metric
     st.sidebar.header("Update Data")
     day = st.sidebar.slider("Select Day", 1, 31, 1)
 
     for metric in metrics:
         value = st.sidebar.number_input(f"Enter value for {metric} on Day {day}", 0, 100, key=f"{selected_platform}_{metric}_{day}")
-        platform_df.at[f"Day {day}", metric] = value
+        platform_df.at[platform_df.index[day-1], metric] = value
 
     # Save and update the data (mocked for demo purposes)
     if st.sidebar.button("Save Data"):
