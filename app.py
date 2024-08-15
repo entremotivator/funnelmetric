@@ -21,12 +21,14 @@ def generate_demo_data():
     for platform in platforms:
         platform_data = {}
         for metric in metrics:
+            # Create realistic demo data with variation
+            base_value = random.randint(50, 150)  # Base value for variation
             platform_data[metric] = [
                 {
                     "Date": (start_date + timedelta(days=i)).strftime('%Y-%m-%d'),
-                    "Value": random.randint(0, 100)
+                    "Value": int(base_value + random.gauss(0, 20))  # Gaussian distribution for variability
                 }
-                for i in range(90)  # Changed to 90 days
+                for i in range(90)
             ]
         data[platform] = platform_data
     return data
@@ -54,7 +56,7 @@ def save_data(data):
 
 # Main App
 def main():
-    st.title("90-Day Funnel Tracking System")  # Updated title
+    st.title("90-Day Funnel Tracking System")
 
     data = load_data()
 
@@ -97,7 +99,7 @@ def main():
 
     # Provide option to enter or update data for each day and metric
     st.sidebar.header("Update Data")
-    day = st.sidebar.slider("Select Day", 1, 90, 1)  # Changed to 90 days
+    day = st.sidebar.slider("Select Day", 1, 90, 1)
 
     if selected_platform in data:
         platform_df = generate_platform_df(data[selected_platform])
