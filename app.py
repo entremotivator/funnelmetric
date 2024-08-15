@@ -14,7 +14,7 @@ metrics = [
     "Closings", "Email Opens", "Recovery Actions", "Referrals", "Retargets"
 ]
 
-# Generate demo data for 31 days
+# Generate demo data for 90 days
 def generate_demo_data():
     data = {}
     start_date = datetime.today()
@@ -26,7 +26,7 @@ def generate_demo_data():
                     "Date": (start_date + timedelta(days=i)).strftime('%Y-%m-%d'),
                     "Value": random.randint(0, 100)
                 }
-                for i in range(31)
+                for i in range(90)  # Changed to 90 days
             ]
         data[platform] = platform_data
     return data
@@ -54,7 +54,7 @@ def save_data(data):
 
 # Main App
 def main():
-    st.title("31-Day Funnel Tracking System")
+    st.title("90-Day Funnel Tracking System")  # Updated title
 
     data = load_data()
 
@@ -67,8 +67,11 @@ def main():
     # Sum up metrics across all platforms for the entire period
     summary = pd.DataFrame(columns=metrics)
     for platform in platforms:
-        platform_df = generate_platform_df(data[platform])
-        summary.loc[platform] = platform_df[metrics].sum()
+        if platform in data:
+            platform_df = generate_platform_df(data[platform])
+            summary.loc[platform] = platform_df[metrics].sum()
+        else:
+            st.warning(f"No data available for {platform}")
 
     st.dataframe(summary)
 
@@ -77,27 +80,36 @@ def main():
     selected_platform = st.sidebar.selectbox("Select a Platform", platforms)
 
     st.subheader(f"Tracking Data for {selected_platform}")
-    platform_df = generate_platform_df(data[selected_platform])
-    st.dataframe(platform_df)
+    if selected_platform in data:
+        platform_df = generate_platform_df(data[selected_platform])
+        st.dataframe(platform_df)
+    else:
+        st.warning(f"No data available for {selected_platform}")
 
-    # Plot multiple metric trends over 31 days
+    # Plot multiple metric trends over 90 days
     st.subheader("Metric Trends")
     metrics_to_plot = st.multiselect("Select Metrics to Plot", metrics, default=metrics[:3])
-    st.line_chart(platform_df[metrics_to_plot])
+    if selected_platform in data:
+        platform_df = generate_platform_df(data[selected_platform])
+        st.line_chart(platform_df[metrics_to_plot])
+    else:
+        st.warning(f"No data available for {selected_platform}")
 
     # Provide option to enter or update data for each day and metric
     st.sidebar.header("Update Data")
-    day = st.sidebar.slider("Select Day", 1, 31, 1)
+    day = st.sidebar.slider("Select Day", 1, 90, 1)  # Changed to 90 days
 
-    for metric in metrics:
-        value = st.sidebar.number_input(f"Enter value for {metric} on Day {day}", 0, 100, key=f"{selected_platform}_{metric}_{day}")
-        platform_df.at[platform_df.index[day-1], metric] = value
+    if selected_platform in data:
+        platform_df = generate_platform_df(data[selected_platform])
+        for metric in metrics:
+            value = st.sidebar.number_input(f"Enter value for {metric} on Day {day}", 0, 100, key=f"{selected_platform}_{metric}_{day}")
+            platform_df.at[platform_df.index[day-1], metric] = value
 
-    # Save and update the data (mocked for demo purposes)
-    if st.sidebar.button("Save Data"):
-        data[selected_platform] = platform_df.to_dict(orient='list')
-        save_data(data)
-        st.success("Data updated successfully!")
+        # Save and update the data (mocked for demo purposes)
+        if st.sidebar.button("Save Data"):
+            data[selected_platform] = platform_df.to_dict(orient='list')
+            save_data(data)
+            st.success("Data updated successfully!")
 
     # Export data as CSV
     st.sidebar.header("Export Data")
@@ -126,10 +138,11 @@ def main():
     st.subheader("Additional Insights")
     st.write("Engagement Analysis: Average engagement per platform, top-performing days, and metrics.")
 
-    top_performers = {platform: platform_df['Engagement'].mean() for platform in platforms}
-    sorted_platforms = sorted(top_performers.items(), key=lambda x: x[1], reverse=True)
+    if selected_platform in data:
+        top_performers = {platform: generate_platform_df(data[platform])['Engagement'].mean() for platform in platforms}
+        sorted_platforms = sorted(top_performers.items(), key=lambda x: x[1], reverse=True)
 
-    st.write(f"Top Performing Platform: {sorted_platforms[0][0]} with average engagement of {sorted_platforms[0][1]:.2f}")
+        st.write(f"Top Performing Platform: {sorted_platforms[0][0]} with average engagement of {sorted_platforms[0][1]:.2f}")
 
     st.write("Here, you can add more charts or analysis, like identifying top-performing platforms, days with the highest engagement, etc.")
 
