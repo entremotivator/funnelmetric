@@ -5,7 +5,10 @@ import random
 from datetime import datetime, timedelta
 
 # Initialize platforms and metrics
-platforms = [f"Platform {i+1}" for i in range(10)]
+platforms = [
+    "Facebook", "Instagram (IG)", "Twitter", "Threads", "Pinterest", 
+    "TikTok", "YouTube", "LinkedIn", "Fanbase", "Facebook Group"
+]
 metrics = [
     "Posts", "Engagement", "Clicks", "Views", "Appointments", "Show-ups",
     "Closings", "Email Opens", "Recovery Actions", "Referrals", "Retargets"
